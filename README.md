@@ -2,7 +2,8 @@
 
 Aplicação full stack para gestão de clientes, fornecedores, estoque e pedidos/vendas.
 
-![Uploading Captura de tela 2026-11-09 220649.png…]()
+<img width="1051" height="807" alt="Captura de tela 2026-11-09 220636" src="https://github.com/user-attachments/assets/bf0c4c6f-6bfb-4293-8d2c-b2b64308bf68" />
+
 
 
 ## Stack
