@@ -2,6 +2,9 @@
 
 Aplicação full stack para gestão de clientes, fornecedores, estoque e pedidos/vendas.
 
+![Uploading Captura de tela 2026-11-09 220649.png…]()
+
+
 ## Stack
 
 - **Backend:** Node.js + Express + PostgreSQL (`pg`)
