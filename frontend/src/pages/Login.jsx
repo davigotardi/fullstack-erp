@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api';
 
 export default function Login() {
@@ -20,25 +20,38 @@ export default function Login() {
     }
   };
 
-  const input = { width: '100%', padding: '0.6rem', marginBottom: '0.75rem', borderRadius: 6, border: '1px solid #cbd5e1', boxSizing: 'border-box' };
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
-      <form onSubmit={submit} style={{ background: '#fff', padding: '2rem', borderRadius: 10, width: 340 }}>
-        <h1 style={{ marginTop: 0 }}>ERP</h1>
-        <p style={{ color: '#64748b', marginTop: -8 }}>Sistema de Gestão Empresarial</p>
-        <input style={input} type="email" placeholder="Email" required
-          value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-        <input style={input} type="password" placeholder="Senha" required
-          value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} />
-        {erro && <p style={{ color: '#dc2626', fontSize: '0.9rem' }}>{erro}</p>}
-        <button type="submit" style={{ width: '100%', padding: '0.65rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-          Entrar
-        </button>
-        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '1rem' }}>
-          Demo: admin@erp.com / admin123
-        </p>
-      </form>
+    <div className="login-page">
+      <section className="login-showcase">
+        <Link className="brand" to="/" aria-label="Evolve ERP">
+          <span className="brand-mark">E</span>
+          <span className="brand-copy">
+            <strong>evolve</strong>
+            <span>gestão inteligente</span>
+          </span>
+        </Link>
+        <div className="showcase-copy">
+          <h2>Seu negócio, em um novo ritmo.</h2>
+          <p>Uma visão clara de cada operação para você tomar decisões com confiança e seguir em frente.</p>
+        </div>
+        <div className="showcase-footer">Gestão simples. Resultados consistentes.</div>
+      </section>
+
+      <main className="login-panel">
+        <form className="login-form" onSubmit={submit}>
+          <h1>Bem-vindo de volta</h1>
+          <p className="login-description">Entre na sua conta para continuar.</p>
+          <label htmlFor="login-email">Email</label>
+          <input id="login-email" type="email" placeholder="voce@empresa.com" autoComplete="email" required
+            value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+          <label htmlFor="login-password">Senha</label>
+          <input id="login-password" type="password" placeholder="Sua senha" autoComplete="current-password" required
+            value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} />
+          {erro && <p className="error-message" role="alert">{erro}</p>}
+          <button type="submit" className="primary-button">Entrar na plataforma <span aria-hidden="true">&nbsp; →</span></button>
+          <p className="demo-hint">Acesso de demonstração<br /><strong>admin@erp.com</strong> / <strong>admin123</strong></p>
+        </form>
+      </main>
     </div>
   );
 }

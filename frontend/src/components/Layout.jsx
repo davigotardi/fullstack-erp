@@ -1,17 +1,27 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+
+const today = new Date();
 
 const links = [
-  { to: '/', label: 'Dashboard', end: true },
-  { to: '/clientes', label: 'Clientes' },
-  { to: '/fornecedores', label: 'Fornecedores' },
-  { to: '/produtos', label: 'Estoque / Produtos' },
-  { to: '/pedidos', label: 'Pedidos' },
+  { to: '/', label: 'Dashboard', icon: '▦', end: true },
+  { to: '/clientes', label: 'Clientes', icon: '♙' },
+  { to: '/fornecedores', label: 'Fornecedores', icon: '⌂' },
+  { to: '/produtos', label: 'Estoque / Produtos', icon: '▤' },
+  { to: '/pedidos', label: 'Pedidos', icon: '▧' },
 ];
 
 export default function Layout() {
   const nav = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('erp_user') || '{}');
   const isAdmin = user.perfil === 'admin';
+  const currentPage = links.find(link => link.end ? location.pathname === link.to : location.pathname.startsWith(link.to));
+  const initials = (user.nome || 'Usuário')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('');
 
   const logout = () => {
     localStorage.clear();
@@ -19,37 +29,53 @@ export default function Layout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={{
-        width: 220, background: '#1e293b', color: '#fff', padding: '1rem',
-        display: 'flex', flexDirection: 'column', gap: '0.25rem', flexShrink: 0,
-      }}>
-        <h2 style={{ margin: '0 0 1rem' }}>ERP</h2>
-        {links.map(l => (
-          <NavLink key={l.to} to={l.to} end={l.end}
-            style={({ isActive }) => ({
-              color: '#cbd5e1', textDecoration: 'none', padding: '0.5rem 0.75rem',
-              borderRadius: 6, background: isActive ? '#334155' : 'transparent',
-            })}>{l.label}</NavLink>
-        ))}
-        {isAdmin && (
-          <NavLink to="/usuarios"
-            style={({ isActive }) => ({
-              color: '#cbd5e1', textDecoration: 'none', padding: '0.5rem 0.75rem',
-              borderRadius: 6, background: isActive ? '#334155' : 'transparent',
-            })}>Usuários</NavLink>
-        )}
-        <div style={{ marginTop: 'auto', fontSize: '0.85rem', color: '#94a3b8' }}>
-          <div>{user.nome}</div>
-          <button onClick={logout}
-            style={{ marginTop: 8, background: 'none', border: '1px solid #475569', color: '#fff', padding: '0.3rem 0.7rem', borderRadius: 6, cursor: 'pointer' }}>
-            Sair
-          </button>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <Link className="brand" to="/" aria-label="ERP - início">
+          <span className="brand-mark">E</span>
+          <span className="brand-copy">
+            <strong>evolve</strong>
+            <span>gestão inteligente</span>
+          </span>
+        </Link>
+
+        <div className="nav-caption">Workspace</div>
+        <nav className="sidebar-nav" aria-label="Navegação principal">
+          {links.map(link => (
+            <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              <span className="nav-icon" aria-hidden="true">{link.icon}</span>
+              {link.label}
+            </NavLink>
+          ))}
+          {isAdmin && (
+            <NavLink to="/usuarios" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              <span className="nav-icon" aria-hidden="true">♧</span>
+              Usuários
+            </NavLink>
+          )}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <div className="profile-card">
+            <span className="avatar">{initials}</span>
+            <div className="profile-details">
+              <strong>{user.nome || 'Usuário'}</strong>
+              <span>{user.perfil || 'Conta'}</span>
+            </div>
+          </div>
+          <button className="logout-button" onClick={logout}>↪ &nbsp; Sair da conta</button>
         </div>
       </aside>
-      <main style={{ flex: 1, padding: '1.5rem', background: '#f1f5f9', overflow: 'auto' }}>
-        <Outlet />
-      </main>
+
+      <div className="workspace">
+        <header className="topbar">
+          <div className="breadcrumb">Workspace <span aria-hidden="true">/</span> <strong>{currentPage?.label || (location.pathname.startsWith('/pedidos/') ? 'Pedidos' : 'Usuários')}</strong></div>
+          <div className="topbar-date">{today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        </header>
+        <main className="page-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
