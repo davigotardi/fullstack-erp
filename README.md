@@ -1,6 +1,8 @@
 # ERP — Sistema de Gestão Empresarial
 
 Aplicação full stack para gestão de clientes, fornecedores, estoque e pedidos/vendas.
+<img width="1051" height="807" alt="Captura de tela 2026-11-09 220636" src="https://github.com/user-attachments/assets/c33daadb-cd8d-4d50-a002-79f33af0ae3e" />
+
 
 ## Stack
 
