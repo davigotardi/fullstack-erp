@@ -68,6 +68,8 @@ npm run dev              # App em http://localhost:5173 (proxy /api -> :3001)
 - Pedidos de venda: criação com baixa automática de estoque (transação),
   acompanhamento de status e cancelamento com devolução ao estoque
 - Dashboard com totais (clientes, produtos, pedidos abertos, valor em vendas)
+- Administração avançada de usuários: edição de dados, alteração de senha e ativação/desativação do acesso
+- Segurança básica de produção: cabeçalhos HTTP, rate limiting e validação de payloads
 
 ## API (resumo)
 

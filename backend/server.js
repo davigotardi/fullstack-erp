@@ -1,16 +1,27 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const pool = require('./db');
 const authRoutes = require('./routes/auth');
 const pedidosRoutes = require('./routes/pedidos');
 const { routerClientes, routerFornecedores, routerProdutos } = require('./routes/crud');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { erro: 'Muitas requisições em pouco tempo. Tente novamente mais tarde.' },
+}));
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/health', (req, res) => res.json({ ok: true, timestamp: new Date().toISOString() }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/clientes', routerClientes);
