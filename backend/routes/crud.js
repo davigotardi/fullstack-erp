@@ -7,7 +7,7 @@ function crud({ tabela, campos, busca }) {
   const router = express.Router();
   router.use(auth);
 
-  const cols = ['id', ...campos.map(f => f.nome)];
+  const cols = ['id', ...campos.map(f => f.nome), 'ativo'];
 
   router.get('/', async (req, res) => {
     try {

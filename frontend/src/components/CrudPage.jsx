@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import api from '../api';
 
 // Página CRUD genérica usada por Clientes, Fornecedores e Produtos.
@@ -11,6 +11,7 @@ export default function CrudPage({ titulo, endpoint, campos, colunas }) {
   const [q, setQ] = useState('');
   const [erro, setErro] = useState('');
   const [opcoes, setOpcoes] = useState({});
+  const requestId = useRef(0);
 
   const vazio = () => Object.fromEntries(campos.map(c => [c.nome, c.tipo === 'number' ? 0 : '']));
   const labelDe = (nome) => campos.find(c => c.nome === nome)?.label || nome;
@@ -25,8 +26,9 @@ export default function CrudPage({ titulo, endpoint, campos, colunas }) {
   }, []); // eslint-disable-line
 
   const carregar = async () => {
+    const currentRequestId = ++requestId.current;
     const { data } = await api.get(`/${endpoint}`, { params: q ? { q } : {} });
-    setDados(data);
+    if (currentRequestId === requestId.current) setDados(data);
   };
   useEffect(() => { carregar(); }, [q]); // eslint-disable-line
 

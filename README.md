@@ -45,6 +45,26 @@ psql -U postgres -d erp -f backend\schema.sql
 Em ambos os casos, ajuste `DB_*` no `backend/.env` conforme necessário.
 Isso cria as tabelas e um usuário inicial: **admin@erp.com / admin123** (troque a senha depois).
 
+### Testes automatizados com Selenium
+
+Os 15 testes de interface usam Selenium WebDriver e o usuário administrador inicial.
+Veja [a documentação da suíte Selenium](docs/testes-selenium.md) para a lista de casos e detalhes de configuração.
+Execute-os somente contra uma base de dados de testes: os cenários criam clientes,
+fornecedores, produtos, pedidos e usuários com nomes exclusivos e não apagam todos
+os registros criados.
+
+1. Instale a dependência Selenium na raiz do projeto: `npm install`.
+2. Inicialize o banco conforme a seção anterior.
+3. Instale as dependências do backend (`npm --prefix backend install`) e inicie a API (`npm run dev:api`).
+4. Em outro terminal, instale as dependências do frontend (`npm --prefix frontend install`) e inicie-o (`npm run dev:web`).
+5. Execute `npm run test:selenium` na raiz.
+
+Por padrão, os testes abrem o Chrome em modo headless e usam `http://localhost:5173`.
+É necessário ter Chrome instalado; o Selenium Manager tenta localizar o driver.
+As variáveis `BASE_URL`, `SELENIUM_BROWSER` (`chrome`, `edge` ou `firefox`),
+`SELENIUM_BROWSER_BINARY`, `SELENIUM_HEADLESS` (`false` para mostrar o navegador),
+`ERP_ADMIN_EMAIL` e `ERP_ADMIN_PASSWORD` permitem ajustar a execução.
+
 ### 2. Backend
 
 ```powershell
