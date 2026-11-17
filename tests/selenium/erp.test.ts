@@ -1,9 +1,10 @@
-const assert = require('node:assert/strict');
-const { after, before, beforeEach, describe, it } = require('node:test');
-const { Builder, By, until } = require('selenium-webdriver');
-const chrome = require('selenium-webdriver/chrome');
-const edge = require('selenium-webdriver/edge');
-const firefox = require('selenium-webdriver/firefox');
+import assert from 'node:assert/strict';
+import { after, before, beforeEach, describe, it } from 'node:test';
+import { Builder, By, until } from 'selenium-webdriver';
+import chrome from 'selenium-webdriver/chrome';
+import edge from 'selenium-webdriver/edge';
+import firefox from 'selenium-webdriver/firefox';
+import type { WebDriver, WebElement } from 'selenium-webdriver';
 
 const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
 const browserName = (process.env.SELENIUM_BROWSER || 'chrome').toLowerCase();
@@ -12,49 +13,52 @@ const adminPassword = process.env.ERP_ADMIN_PASSWORD || 'admin123';
 const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 let orderFixtureCount = 0;
 
-let driver;
+let driver: WebDriver;
 
-function browserOptions() {
+function browserOptions(browser: 'chrome'): chrome.Options;
+function browserOptions(browser: 'edge'): edge.Options;
+function browserOptions(browser: 'firefox'): firefox.Options;
+function browserOptions(browser: 'chrome' | 'edge' | 'firefox'): chrome.Options | edge.Options | firefox.Options {
   const headless = process.env.SELENIUM_HEADLESS !== 'false';
   const binary = process.env.SELENIUM_BROWSER_BINARY;
 
-  if (browserName === 'chrome') {
+  if (browser === 'chrome') {
     const options = new chrome.Options();
     if (headless) options.addArguments('--headless=new');
     if (binary) options.setChromeBinaryPath(binary);
     return options;
   }
 
-  if (browserName === 'edge') {
+  if (browser === 'edge') {
     const options = new edge.Options();
     if (headless) options.addArguments('--headless=new');
     if (binary) options.setBinaryPath(binary);
     return options;
   }
 
-  if (browserName === 'firefox') {
+  if (browser === 'firefox') {
     const options = new firefox.Options();
     if (headless) options.addArguments('-headless');
     if (binary) options.setBinary(binary);
     return options;
   }
 
-  throw new Error(`Navegador não suportado: ${browserName}`);
+  throw new Error(`Navegador não suportado: ${browser}`);
 }
 
-function xpathText(value) {
+function xpathText(value: string): string {
   if (!value.includes("'")) return `'${value}'`;
   if (!value.includes('"')) return `"${value}"`;
   return `concat(${value.split("'").map(part => `'${part}'`).join(', "\'", ')})`;
 }
 
-async function openPage(path) {
+async function openPage(path: string): Promise<void> {
   await driver.get(baseUrl);
   await driver.executeScript('window.localStorage.clear();');
   await driver.get(new URL(path, baseUrl).toString());
 }
 
-async function signIn() {
+async function signIn(): Promise<void> {
   await openPage('/login');
   await driver.findElement(By.css('input[placeholder="Email"]')).sendKeys(adminEmail);
   await driver.findElement(By.css('input[placeholder="Senha"]')).sendKeys(adminPassword);
@@ -62,7 +66,7 @@ async function signIn() {
   await driver.wait(until.elementLocated(By.css('main h1')), 10000);
 }
 
-async function fillField(label, value) {
+async function fillField(label: string, value: string): Promise<void> {
   const input = await driver.findElement(By.xpath(
     `//label[starts-with(normalize-space(.), ${xpathText(label)})]//input`
   ));
@@ -70,7 +74,7 @@ async function fillField(label, value) {
   await input.sendKeys(value);
 }
 
-async function createClient(name) {
+async function createClient(name: string): Promise<WebElement> {
   await driver.get(new URL('/clientes', baseUrl).toString());
   await driver.wait(until.elementLocated(By.css('main h1')), 10000);
   await fillField('Nome', name);
@@ -80,7 +84,7 @@ async function createClient(name) {
   )), 10000);
 }
 
-async function createProduct(name, code, price, stock) {
+async function createProduct(name: string, code: string, price: string, stock: number): Promise<WebElement> {
   await driver.get(new URL('/produtos', baseUrl).toString());
   await driver.wait(until.elementLocated(By.css('main h1')), 10000);
   await fillField('Código', code);
@@ -94,7 +98,12 @@ async function createProduct(name, code, price, stock) {
   )), 10000);
 }
 
-async function createOrderFixture() {
+async function createOrderFixture(): Promise<{
+  clientName: string;
+  productName: string;
+  initialStock: number;
+  price: string;
+}> {
   const fixtureId = `${runId}-${++orderFixtureCount}`;
   const clientName = `E2E Cliente Pedido ${fixtureId}`;
   const productName = `E2E Produto Pedido ${fixtureId}`;
@@ -123,13 +132,13 @@ async function createOrderFixture() {
   return { clientName, productName, initialStock, price };
 }
 
-async function submitOrder() {
+async function submitOrder(): Promise<void> {
   await driver.findElement(By.xpath('//button[normalize-space(.)="Confirmar pedido"]')).click();
   await driver.wait(until.urlContains('/pedidos/'), 10000);
   await driver.wait(until.elementLocated(By.xpath('//main//h1[starts-with(normalize-space(.), "Pedido ")]')), 10000);
 }
 
-async function rowFor(text) {
+async function rowFor(text: string): Promise<WebElement> {
   return driver.wait(until.elementLocated(By.xpath(
     `//tr[contains(normalize-space(.), ${xpathText(text)})]`
   )), 10000);
@@ -138,9 +147,9 @@ async function rowFor(text) {
 describe('Testes Selenium do ERP', { concurrency: false }, () => {
   before(async () => {
     const builder = new Builder().forBrowser(browserName);
-    if (browserName === 'chrome') builder.setChromeOptions(browserOptions());
-    if (browserName === 'edge') builder.setEdgeOptions(browserOptions());
-    if (browserName === 'firefox') builder.setFirefoxOptions(browserOptions());
+    if (browserName === 'chrome') builder.setChromeOptions(browserOptions('chrome'));
+    if (browserName === 'edge') builder.setEdgeOptions(browserOptions('edge'));
+    if (browserName === 'firefox') builder.setFirefoxOptions(browserOptions('firefox'));
     driver = await builder.build();
     await driver.manage().setTimeouts({ implicit: 0, pageLoad: 20000, script: 10000 });
   });

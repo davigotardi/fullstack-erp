@@ -1,10 +1,11 @@
-const express = require('express');
-const pool = require('../db');
-const { auth } = require('../middleware/auth');
+import express from 'express';
+import pool from '../db';
+import { auth } from '../middleware/auth';
+import type { OrderStatus } from '../types';
 const router = express.Router();
 router.use(auth);
 
-function numeroPedido() {
+function numeroPedido(): string {
   return 'PED-' + Date.now().toString(36).toUpperCase();
 }
 
@@ -25,7 +26,7 @@ router.get('/', async (req, res) => {
       GROUP BY p.id, c.nome, u.nome
       ORDER BY p.id DESC`);
     res.json(rows);
-  } catch (e) { res.status(500).json({ erro: e.message }); }
+  } catch (e) { res.status(500).json({ erro: e instanceof Error ? e.message : 'Erro interno' }); }
 });
 
 router.get('/:id', async (req, res) => {
@@ -40,7 +41,7 @@ router.get('/:id', async (req, res) => {
       FROM itens_pedido i JOIN produtos pr ON pr.id = i.produto_id
       WHERE i.pedido_id = $1 ORDER BY i.id`, [req.params.id]);
     res.json({ ...ped[0], itens });
-  } catch (e) { res.status(500).json({ erro: e.message }); }
+  } catch (e) { res.status(500).json({ erro: e instanceof Error ? e.message : 'Erro interno' }); }
 });
 
 // Criar pedido: valida estoque e baixa em transação
@@ -85,24 +86,28 @@ router.post('/', async (req, res) => {
     res.status(201).json(ped[0]);
   } catch (e) {
     await client.query('ROLLBACK');
-    res.status(400).json({ erro: e.message });
+    res.status(400).json({ erro: e instanceof Error ? e.message : 'Erro ao criar pedido' });
   } finally {
     client.release();
   }
 });
 
 // Atualizar status do pedido
-const STATUS = ['pendente','aprovado','em_separacao','enviado','entregue','cancelado'];
+const STATUS: OrderStatus[] = ['pendente','aprovado','em_separacao','enviado','entregue','cancelado'];
+function isOrderStatus(status: unknown): status is OrderStatus {
+  return STATUS.some(validStatus => validStatus === status);
+}
+
 router.patch('/:id/status', async (req, res) => {
-  const { status } = req.body || {};
-  if (!STATUS.includes(status)) return res.status(400).json({ erro: 'Status inválido' });
+  const { status } = req.body as { status?: unknown };
+  if (!isOrderStatus(status)) return res.status(400).json({ erro: 'Status inválido' });
   try {
     const { rows } = await pool.query(
       'UPDATE pedidos SET status = $1, atualizado_em = NOW() WHERE id = $2 RETURNING *',
       [status, req.params.id]
     );
     rows[0] ? res.json(rows[0]) : res.status(404).json({ erro: 'Pedido não encontrado' });
-  } catch (e) { res.status(400).json({ erro: e.message }); }
+  } catch (e) { res.status(400).json({ erro: e instanceof Error ? e.message : 'Erro ao atualizar pedido' }); }
 });
 
 // Cancelar pedido: devolve estoque
@@ -125,10 +130,10 @@ router.post('/:id/cancelar', async (req, res) => {
     res.json(upd[0]);
   } catch (e) {
     await client.query('ROLLBACK');
-    res.status(400).json({ erro: e.message });
+    res.status(400).json({ erro: e instanceof Error ? e.message : 'Erro ao cancelar pedido' });
   } finally {
     client.release();
   }
 });
 
-module.exports = router;
+export default router;

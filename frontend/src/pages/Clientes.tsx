@@ -1,8 +1,9 @@
 import CrudPage from '../components/CrudPage';
+import type { CrudField } from '../types';
 
-const campos = [
-  { nome: 'nome', label: 'Razão Social / Nome', required: true },
-  { nome: 'documento', label: 'CNPJ' },
+const campos: CrudField[] = [
+  { nome: 'nome', label: 'Nome', required: true },
+  { nome: 'documento', label: 'CPF/CNPJ' },
   { nome: 'email', label: 'Email' },
   { nome: 'telefone', label: 'Telefone' },
   { nome: 'endereco', label: 'Endereço' },
@@ -10,7 +11,7 @@ const campos = [
   { nome: 'uf', label: 'UF' },
 ];
 
-export default function Fornecedores() {
-  return <CrudPage titulo="Fornecedores" endpoint="fornecedores" campos={campos}
+export default function Clientes() {
+  return <CrudPage titulo="Clientes" endpoint="clientes" campos={campos}
     colunas={['nome', 'documento', 'email', 'telefone', 'cidade']} />;
 }

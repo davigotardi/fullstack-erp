@@ -6,9 +6,9 @@ Aplicação full stack para gestão de clientes, fornecedores, estoque e pedidos
 
 ## Stack
 
-- **Backend:** Node.js + Express + PostgreSQL (`pg`)
+- **Backend:** Node.js + TypeScript + Express + PostgreSQL (`pg`)
 - **Autenticação:** JWT + bcryptjs (perfis: `admin`, `vendedor`)
-- **Frontend:** React + Vite + React Router + Axios
+- **Frontend:** React + TypeScript + Vite + React Router + Axios
 
 ## Estrutura
 
@@ -16,10 +16,11 @@ Aplicação full stack para gestão de clientes, fornecedores, estoque e pedidos
 projeto 6/
 ├── backend/          # API REST (Express)
 │   ├── schema.sql    # DDL do banco + usuário admin inicial
-│   ├── db.js         # Pool de conexão PostgreSQL
+│   ├── db.ts         # Pool de conexão PostgreSQL
 │   ├── middleware/   # auth (JWT) e controle de perfil admin
 │   └── routes/       # auth, pedidos, CRUDs (clientes/fornecedores/produtos)
-├── frontend/         # SPA React (Vite)
+├── frontend/         # SPA React + TypeScript (Vite)
+├── tests/selenium/   # Testes de ponta a ponta em TypeScript
 └── README.md
 ```
 

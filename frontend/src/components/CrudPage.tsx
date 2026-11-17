@@ -1,69 +1,93 @@
-import { useEffect, useRef, useState } from 'react';
-import api from '../api';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import api, { apiErrorMessage } from '../api';
+import type { CrudField, CrudRow } from '../types';
 
 // Página CRUD genérica usada por Clientes, Fornecedores e Produtos.
 // `campos`: [{nome, label, tipo, required, chave?, optionsEndpoint?, optionLabel?, optionValue?}]
 // `colunas`: nomes de campo a exibir na tabela.
-export default function CrudPage({ titulo, endpoint, campos, colunas }) {
-  const [dados, setDados] = useState([]);
-  const [form, setForm] = useState({});
-  const [editId, setEditId] = useState(null);
+interface CrudPageProps {
+  titulo: string;
+  endpoint: string;
+  campos: CrudField[];
+  colunas: string[];
+}
+
+interface Option {
+  id: number;
+  [key: string]: string | number;
+}
+
+type FormValues = Record<string, string | number>;
+
+export default function CrudPage({ titulo, endpoint, campos, colunas }: CrudPageProps) {
+  const [dados, setDados] = useState<CrudRow[]>([]);
+  const [form, setForm] = useState<FormValues>({});
+  const [editId, setEditId] = useState<number | null>(null);
   const [q, setQ] = useState('');
   const [erro, setErro] = useState('');
-  const [opcoes, setOpcoes] = useState({});
+  const [opcoes, setOpcoes] = useState<Record<string, Option[]>>({});
   const requestId = useRef(0);
 
-  const vazio = () => Object.fromEntries(campos.map(c => [c.nome, c.tipo === 'number' ? 0 : '']));
-  const labelDe = (nome) => campos.find(c => c.nome === nome)?.label || nome;
-  const chaveDe = (nome) => campos.find(c => c.nome === nome)?.chave || nome;
+  const vazio = (): FormValues => Object.fromEntries(campos.map(c => [c.nome, c.tipo === 'number' ? 0 : '']));
+  const labelDe = (nome: string): string => campos.find(c => c.nome === nome)?.label || nome;
+  const chaveDe = (nome: string): string => campos.find(c => c.nome === nome)?.chave || nome;
 
   useEffect(() => {
     campos.filter(c => c.tipo === 'select').forEach(async c => {
       if (opcoes[c.nome]) return;
       const { data } = await api.get(`/${c.optionsEndpoint}`);
-      setOpcoes(o => ({ ...o, [c.nome]: data }));
+      setOpcoes(o => ({ ...o, [c.nome]: data as Option[] }));
     });
   }, []); // eslint-disable-line
 
   const carregar = async () => {
     const currentRequestId = ++requestId.current;
-    const { data } = await api.get(`/${endpoint}`, { params: q ? { q } : {} });
+    const { data } = await api.get<CrudRow[]>(`/${endpoint}`, { params: q ? { q } : {} });
     if (currentRequestId === requestId.current) setDados(data);
   };
   useEffect(() => { carregar(); }, [q]); // eslint-disable-line
 
-  const salvar = async (e) => {
+  const salvar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErro('');
-    const payload = {};
+    const payload: Record<string, string | number | null> = {};
     campos.forEach(c => {
-      let v = form[c.nome];
-      if (c.tipo === 'number' || c.tipo === 'select') v = v === '' || v == null ? null : Number(v);
-      else if (v === '') v = null;
-      payload[c.nome] = v;
+      const value = form[c.nome];
+      if (c.tipo === 'number' || c.tipo === 'select') {
+        payload[c.nome] = value === '' || value == null ? null : Number(value);
+      } else {
+        payload[c.nome] = value === '' ? null : value;
+      }
     });
     try {
       if (editId) await api.put(`/${endpoint}/${editId}`, payload);
       else await api.post(`/${endpoint}`, payload);
       setForm(vazio()); setEditId(null); carregar();
-    } catch (err) { setErro(err.response?.data?.erro || 'Erro ao salvar'); }
+    } catch (err) { setErro(apiErrorMessage(err, 'Erro ao salvar')); }
   };
 
-  const editar = (row) => {
+  const editar = (row: CrudRow) => {
     setEditId(row.id);
-    setForm(Object.fromEntries(campos.map(c => [c.nome, row[c.nome] ?? (c.tipo === 'number' || c.tipo === 'select' ? 0 : '')])));
+    const values: FormValues = {};
+    campos.forEach(c => {
+      const value = row[c.nome];
+      values[c.nome] = typeof value === 'string' || typeof value === 'number'
+        ? value
+        : c.tipo === 'number' || c.tipo === 'select' ? 0 : '';
+    });
+    setForm(values);
   };
 
-  const excluir = async (id) => {
+  const excluir = async (id: number) => {
     if (!confirm('Excluir este registro?')) return;
     try { await api.delete(`/${endpoint}/${id}`); carregar(); }
-    catch (err) { alert(err.response?.data?.erro || 'Erro ao excluir'); }
+    catch (err) { alert(apiErrorMessage(err, 'Erro ao excluir')); }
   };
 
-  const input = { padding: '0.4rem', borderRadius: 6, border: '1px solid #cbd5e1' };
-  const th = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
-  const td = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
-  const btn = { padding: '0.45rem 1rem', border: 'none', borderRadius: 6, cursor: 'pointer' };
+  const input: CSSProperties = { padding: '0.4rem', borderRadius: 6, border: '1px solid #cbd5e1' };
+  const th: CSSProperties = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
+  const td: CSSProperties = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
+  const btn: CSSProperties = { padding: '0.45rem 1rem', border: 'none', borderRadius: 6, cursor: 'pointer' };
 
   return (
     <div>
@@ -82,7 +106,9 @@ export default function CrudPage({ titulo, endpoint, campos, colunas }) {
                 onChange={e => setForm({ ...form, [c.nome]: e.target.value })}>
                 <option value="">—</option>
                 {(opcoes[c.nome] || []).map(o => (
-                  <option key={o[c.optionValue]} value={o[c.optionValue]}>{o[c.optionLabel]}</option>
+                  <option key={o[c.optionValue || 'id']} value={o[c.optionValue || 'id']}>
+                    {o[c.optionLabel || 'nome']}
+                  </option>
                 ))}
               </select>
             ) : (

@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api';
+import type { Order } from '../types';
 
 export default function PedidoDetalhe() {
   const { id } = useParams();
-  const [pedido, setPedido] = useState(null);
+  const [pedido, setPedido] = useState<Order | null>(null);
 
   useEffect(() => {
-    api.get(`/pedidos/${id}`).then(r => setPedido(r.data)).catch(() => {});
+    if (id) api.get<Order>(`/pedidos/${id}`).then(r => setPedido(r.data)).catch(() => {});
   }, [id]);
 
   if (!pedido) return <p>Carregando...</p>;
 
-  const th = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
-  const td = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
+  const th: CSSProperties = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
+  const td: CSSProperties = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
 
   return (
     <div style={{ maxWidth: 800 }}>
@@ -36,7 +37,7 @@ export default function PedidoDetalhe() {
               <td style={td}>R$ {Number(i.subtotal).toFixed(2)}</td>
             </tr>
           ))}
-          <tr><td style={td} colSpan="3"><strong>Total</strong></td>
+          <tr><td style={td} colSpan={3}><strong>Total</strong></td>
             <td style={td}><strong>R$ {Number(pedido.total).toFixed(2)}</strong></td></tr>
         </tbody>
       </table>

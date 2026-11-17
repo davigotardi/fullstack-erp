@@ -1,22 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { apiErrorMessage } from '../api';
+import type { Customer, OrderItemInput, Product } from '../types';
+
+interface OrderItemForm {
+  produto_id: string;
+  quantidade: number;
+}
 
 export default function NovoPedido() {
-  const [clientes, setClientes] = useState([]);
-  const [produtos, setProdutos] = useState([]);
+  const [clientes, setClientes] = useState<Customer[]>([]);
+  const [produtos, setProdutos] = useState<Product[]>([]);
   const [clienteId, setClienteId] = useState('');
   const [observacao, setObservacao] = useState('');
-  const [itens, setItens] = useState([{ produto_id: '', quantidade: 1 }]);
+  const [itens, setItens] = useState<OrderItemForm[]>([{ produto_id: '', quantidade: 1 }]);
   const [erro, setErro] = useState('');
   const nav = useNavigate();
 
   useEffect(() => {
-    api.get('/clientes').then(r => setClientes(r.data));
-    api.get('/produtos').then(r => setProdutos(r.data.filter(p => p.ativo)));
+    api.get<Customer[]>('/clientes').then(r => setClientes(r.data));
+    api.get<Product[]>('/produtos').then(r => setProdutos(r.data.filter(p => p.ativo)));
   }, []);
 
-  const setItem = (i, campo, valor) => {
+  const setItem = (i: number, campo: keyof OrderItemForm, valor: string | number) => {
     const copia = [...itens];
     copia[i] = { ...copia[i], [campo]: valor };
     setItens(copia);
@@ -27,23 +33,23 @@ export default function NovoPedido() {
     return acc + (p ? Number(p.preco) * Number(it.quantidade || 0) : 0);
   }, 0);
 
-  const salvar = async (e) => {
+  const salvar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErro('');
-    const payloadItens = itens.filter(i => i.produto_id).map(i => ({
+    const payloadItens: OrderItemInput[] = itens.filter(i => i.produto_id).map(i => ({
       produto_id: Number(i.produto_id), quantidade: Number(i.quantidade),
     }));
     try {
-      const { data } = await api.post('/pedidos', {
+      const { data } = await api.post<{ id: number }>('/pedidos', {
         cliente_id: Number(clienteId), itens: payloadItens, observacao,
       });
       nav(`/pedidos/${data.id}`);
-    } catch (err) { setErro(err.response?.data?.erro || 'Erro ao criar pedido'); }
+    } catch (err) { setErro(apiErrorMessage(err, 'Erro ao criar pedido')); }
   };
 
-  const input = { padding: '0.4rem', borderRadius: 6, border: '1px solid #cbd5e1' };
-  const th = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
-  const td = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
+  const input: CSSProperties = { padding: '0.4rem', borderRadius: 6, border: '1px solid #cbd5e1' };
+  const th: CSSProperties = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
+  const td: CSSProperties = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
 
   return (
     <div>

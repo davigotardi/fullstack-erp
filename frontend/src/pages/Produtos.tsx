@@ -1,6 +1,7 @@
 import CrudPage from '../components/CrudPage';
+import type { CrudField } from '../types';
 
-const campos = [
+const campos: CrudField[] = [
   { nome: 'codigo', label: 'Código' },
   { nome: 'nome', label: 'Nome', required: true },
   { nome: 'descricao', label: 'Descrição' },

@@ -1,12 +1,13 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const pool = require('./db');
-const authRoutes = require('./routes/auth');
-const pedidosRoutes = require('./routes/pedidos');
-const { routerClientes, routerFornecedores, routerProdutos } = require('./routes/crud');
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import pool from './db';
+import authRoutes from './routes/auth';
+import pedidosRoutes from './routes/pedidos';
+import { routerClientes, routerFornecedores, routerProdutos } from './routes/crud';
+import { auth } from './middleware/auth';
 
 const app = express();
 app.disable('x-powered-by');
@@ -30,7 +31,7 @@ app.use('/api/produtos', routerProdutos);
 app.use('/api/pedidos', pedidosRoutes);
 
 // Dashboard: totais rápidos
-app.get('/api/dashboard', require('./middleware/auth').auth, async (req, res) => {
+app.get('/api/dashboard', auth, async (_req, res) => {
   try {
     const [cli, forn, prod, ped, vendas] = await Promise.all([
       pool.query('SELECT COUNT(*)::int AS n FROM clientes WHERE ativo'),
@@ -52,13 +53,13 @@ app.get('/api/dashboard', require('./middleware/auth').auth, async (req, res) =>
       pedidosAbertos: ped.rows[0].abertos,
       totalVendas: vendas.rows[0].total,
     });
-  } catch (e) { res.status(500).json({ erro: e.message }); }
+  } catch (e) { res.status(500).json({ erro: e instanceof Error ? e.message : 'Erro interno' }); }
 });
 
-app.use((err, req, res, next) => {
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
   res.status(500).json({ erro: 'Erro interno' });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT || 3001);
 app.listen(PORT, () => console.log(`API ERP rodando em http://localhost:${PORT}`));

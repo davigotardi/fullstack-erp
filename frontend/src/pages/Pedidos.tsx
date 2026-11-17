@@ -1,26 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import api, { apiErrorMessage } from '../api';
+import type { Order, OrderStatus } from '../types';
 
-const STATUS = {
+const STATUS: Record<OrderStatus, string> = {
   pendente: '#f59e0b', aprovado: '#3b82f6', em_separacao: '#8b5cf6',
   enviado: '#06b6d4', entregue: '#22c55e', cancelado: '#ef4444',
 };
 
 export default function Pedidos() {
-  const [pedidos, setPedidos] = useState([]);
-  const carregar = () => api.get('/pedidos').then(r => setPedidos(r.data));
+  const [pedidos, setPedidos] = useState<Order[]>([]);
+  const carregar = () => api.get<Order[]>('/pedidos').then(r => setPedidos(r.data));
   useEffect(() => { carregar(); }, []);
 
-  const cancelar = async (id) => {
+  const cancelar = async (id: number) => {
     if (!confirm('Cancelar pedido e devolver itens ao estoque?')) return;
     try { await api.post(`/pedidos/${id}/cancelar`); carregar(); }
-    catch (e) { alert(e.response?.data?.erro || 'Erro ao cancelar'); }
+    catch (e) { alert(apiErrorMessage(e, 'Erro ao cancelar')); }
   };
 
-  const th = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
-  const td = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
-  const btn = { padding: '0.3rem 0.7rem', border: 'none', borderRadius: 6, cursor: 'pointer' };
+  const th: CSSProperties = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
+  const td: CSSProperties = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
+  const btn: CSSProperties = { padding: '0.3rem 0.7rem', border: 'none', borderRadius: 6, cursor: 'pointer' };
 
   return (
     <div>

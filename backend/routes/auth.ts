@@ -1,15 +1,27 @@
-const { auth, admin } = require('../middleware/auth');
-const pool = require('../db');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const express = require('express');
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import pool from '../db';
+import { auth, admin } from '../middleware/auth';
+import type { AuthenticatedUser } from '../types/express';
+
+interface UserRecord {
+  id: number;
+  nome: string;
+  email: string;
+  senha_hash: string;
+  perfil: AuthenticatedUser['perfil'];
+  ativo: boolean;
+  criado_em: string;
+}
+
 const router = express.Router();
 
-function normalizarEmail(email) {
+function normalizarEmail(email: unknown): string {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
-function devolverUsuario(usuario) {
+function devolverUsuario(usuario: UserRecord | undefined) {
   return usuario ? {
     id: usuario.id,
     nome: usuario.nome,
@@ -22,12 +34,12 @@ function devolverUsuario(usuario) {
 
 router.post('/login', async (req, res) => {
   const email = normalizarEmail(req.body?.email);
-  const senha = req.body?.senha;
+  const senha: unknown = req.body?.senha;
 
-  if (!email || !senha) return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
+  if (!email || typeof senha !== 'string' || !senha) return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
 
   try {
-    const { rows } = await pool.query('SELECT * FROM usuarios WHERE email = $1 AND ativo = TRUE', [email]);
+    const { rows } = await pool.query<UserRecord>('SELECT * FROM usuarios WHERE email = $1 AND ativo = TRUE', [email]);
     const usuario = rows[0];
     if (!usuario || !(await bcrypt.compare(senha, usuario.senha_hash))) {
       return res.status(401).json({ erro: 'Credenciais inválidas' });
@@ -44,16 +56,16 @@ router.post('/login', async (req, res) => {
       usuario: devolverUsuario(usuario),
     });
   } catch (e) {
-    res.status(500).json({ erro: e.message });
+    res.status(500).json({ erro: e instanceof Error ? e.message : 'Erro interno' });
   }
 });
 
 router.get('/me', auth, async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM usuarios WHERE id = $1', [req.usuario.id]);
+    const { rows } = await pool.query<UserRecord>('SELECT * FROM usuarios WHERE id = $1', [req.usuario.id]);
     res.json(devolverUsuario(rows[0]));
   } catch (e) {
-    res.status(500).json({ erro: e.message });
+    res.status(500).json({ erro: e instanceof Error ? e.message : 'Erro interno' });
   }
 });
 
@@ -92,13 +104,13 @@ router.patch('/me', auth, async (req, res) => {
     if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado' });
     res.json(devolverUsuario(rows[0]));
   } catch (e) {
-    res.status(400).json({ erro: e.message });
+    res.status(400).json({ erro: e instanceof Error ? e.message : 'Erro ao atualizar usuário' });
   }
 });
 
 // Administração de usuários (somente admin)
 router.get('/usuarios', auth, admin, async (req, res) => {
-  const { rows } = await pool.query('SELECT id, nome, email, perfil, ativo, criado_em FROM usuarios ORDER BY nome');
+  const { rows } = await pool.query<UserRecord>('SELECT id, nome, email, perfil, ativo, criado_em FROM usuarios ORDER BY nome');
   res.json(rows.map(devolverUsuario));
 });
 
@@ -108,17 +120,17 @@ router.get('/usuarios/:id', auth, admin, async (req, res) => {
     if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado' });
     res.json(devolverUsuario(rows[0]));
   } catch (e) {
-    res.status(400).json({ erro: e.message });
+    res.status(400).json({ erro: e instanceof Error ? e.message : 'Erro ao consultar usuário' });
   }
 });
 
 router.post('/usuarios', auth, admin, async (req, res) => {
   const nome = String(req.body?.nome || '').trim();
   const email = normalizarEmail(req.body?.email);
-  const senha = req.body?.senha;
+  const senha: unknown = req.body?.senha;
   const perfil = req.body?.perfil || 'vendedor';
 
-  if (!nome || !email || !senha) return res.status(400).json({ erro: 'nome, email e senha são obrigatórios' });
+  if (!nome || !email || typeof senha !== 'string' || !senha) return res.status(400).json({ erro: 'nome, email e senha são obrigatórios' });
   if (!['admin', 'vendedor'].includes(perfil)) return res.status(400).json({ erro: 'Perfil inválido' });
 
   try {
@@ -129,7 +141,7 @@ router.post('/usuarios', auth, admin, async (req, res) => {
     );
     res.status(201).json(devolverUsuario(rows[0]));
   } catch (e) {
-    res.status(400).json({ erro: e.message });
+    res.status(400).json({ erro: e instanceof Error ? e.message : 'Erro ao criar usuário' });
   }
 });
 
@@ -179,7 +191,7 @@ router.patch('/usuarios/:id', auth, admin, async (req, res) => {
     if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado' });
     res.json(devolverUsuario(rows[0]));
   } catch (e) {
-    res.status(400).json({ erro: e.message });
+    res.status(400).json({ erro: e instanceof Error ? e.message : 'Erro ao atualizar usuário' });
   }
 });
 
@@ -198,8 +210,8 @@ router.patch('/usuarios/:id/status', auth, admin, async (req, res) => {
     if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado' });
     res.json(devolverUsuario(rows[0]));
   } catch (e) {
-    res.status(400).json({ erro: e.message });
+    res.status(400).json({ erro: e instanceof Error ? e.message : 'Erro ao alterar status do usuário' });
   }
 });
 
-module.exports = router;
+export default router;

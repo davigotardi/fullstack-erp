@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, NavLink } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import Login from './pages/Login';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -10,7 +11,7 @@ import NovoPedido from './pages/NovoPedido';
 import PedidoDetalhe from './pages/PedidoDetalhe';
 import Usuarios from './pages/Usuarios';
 
-function Private({ children }) {
+function Private({ children }: { children: ReactNode }) {
   return localStorage.getItem('erp_token') ? children : <Navigate to="/login" replace />;
 }
 

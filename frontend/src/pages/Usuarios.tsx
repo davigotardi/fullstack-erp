@@ -1,15 +1,23 @@
-import { useEffect, useState } from 'react';
-import api from '../api';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import api, { apiErrorMessage } from '../api';
+import type { AppUser, UserProfile } from '../types';
 
-const formPadrao = { nome: '', email: '', senha: '', perfil: 'vendedor' };
+interface UserForm {
+  nome: string;
+  email: string;
+  senha: string;
+  perfil: UserProfile;
+}
+
+const formPadrao: UserForm = { nome: '', email: '', senha: '', perfil: 'vendedor' };
 
 export default function Usuarios() {
-  const [usuarios, setUsuarios] = useState([]);
-  const [form, setForm] = useState(formPadrao);
-  const [editId, setEditId] = useState(null);
+  const [usuarios, setUsuarios] = useState<AppUser[]>([]);
+  const [form, setForm] = useState<UserForm>(formPadrao);
+  const [editId, setEditId] = useState<number | null>(null);
   const [erro, setErro] = useState('');
 
-  const carregar = () => api.get('/auth/usuarios').then(r => setUsuarios(r.data));
+  const carregar = () => api.get<AppUser[]>('/auth/usuarios').then(r => setUsuarios(r.data));
   useEffect(() => { carregar(); }, []);
 
   const limparFormulario = () => {
@@ -17,13 +25,13 @@ export default function Usuarios() {
     setEditId(null);
   };
 
-  const salvar = async (e) => {
+  const salvar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErro('');
 
     try {
       if (editId) {
-        const payload = { ...form };
+        const payload: Partial<UserForm> = { ...form };
         if (!payload.senha) delete payload.senha;
         await api.patch(`/auth/usuarios/${editId}`, payload);
       } else {
@@ -33,27 +41,27 @@ export default function Usuarios() {
       limparFormulario();
       carregar();
     } catch (err) {
-      setErro(err.response?.data?.erro || 'Erro ao salvar usuário');
+      setErro(apiErrorMessage(err, 'Erro ao salvar usuário'));
     }
   };
 
-  const alternarStatus = async (usuario) => {
+  const alternarStatus = async (usuario: AppUser) => {
     try {
       await api.patch(`/auth/usuarios/${usuario.id}/status`, { ativo: !usuario.ativo });
       carregar();
     } catch (err) {
-      setErro(err.response?.data?.erro || 'Erro ao alterar status do usuário');
+      setErro(apiErrorMessage(err, 'Erro ao alterar status do usuário'));
     }
   };
 
-  const editar = (usuario) => {
+  const editar = (usuario: AppUser) => {
     setEditId(usuario.id);
     setForm({ nome: usuario.nome, email: usuario.email, senha: '', perfil: usuario.perfil });
   };
 
-  const input = { padding: '0.4rem', borderRadius: 6, border: '1px solid #cbd5e1' };
-  const th = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
-  const td = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
+  const input: CSSProperties = { padding: '0.4rem', borderRadius: 6, border: '1px solid #cbd5e1' };
+  const th: CSSProperties = { textAlign: 'left', padding: '0.5rem', borderBottom: '2px solid #e2e8f0' };
+  const td: CSSProperties = { padding: '0.5rem', borderBottom: '1px solid #e2e8f0' };
 
   return (
     <div>
@@ -69,7 +77,10 @@ export default function Usuarios() {
         <label style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem' }}>Senha
           <input style={input} type="password" placeholder={editId ? 'Nova senha (opcional)' : 'Sua senha'} required={!editId} value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} /></label>
         <label style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem' }}>Perfil
-          <select style={input} value={form.perfil} onChange={e => setForm({ ...form, perfil: e.target.value })}>
+          <select style={input} value={form.perfil} onChange={e => setForm({
+            ...form,
+            perfil: e.target.value === 'admin' ? 'admin' : 'vendedor',
+          })}>
             <option value="vendedor">Vendedor</option><option value="admin">Admin</option>
           </select></label>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -91,7 +102,7 @@ export default function Usuarios() {
               </td>
             </tr>
           ))}
-          {!usuarios.length && <tr><td style={td} colSpan="5">Nenhum usuário cadastrado.</td></tr>}
+          {!usuarios.length && <tr><td style={td} colSpan={5}>Nenhum usuário cadastrado.</td></tr>}
         </tbody>
       </table>
     </div>

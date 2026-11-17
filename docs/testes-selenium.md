@@ -1,7 +1,7 @@
 # Testes automatizados com Selenium
 
 Este documento descreve a suíte de testes de interface do ERP, localizada em
-[`tests/selenium/erp.test.js`](../tests/selenium/erp.test.js). Os casos usam
+[`tests/selenium/erp.test.ts`](../tests/selenium/erp.test.ts). Os casos usam
 Selenium WebDriver para interagir com a aplicação no navegador e cobrem os
 fluxos de autenticação, cadastros, estoque, pedidos e usuários.
 
@@ -59,6 +59,12 @@ Em outro terminal, execute a suíte:
 
 ```powershell
 npm run test:selenium
+```
+
+Para validar os tipos dos testes sem abrir o navegador:
+
+```powershell
+npm run typecheck:tests
 ```
 
 ## Configuração opcional
